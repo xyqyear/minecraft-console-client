@@ -1,0 +1,49 @@
+name: Docker Image CI
+
+on:
+  workflow_dispatch:
+
+env:
+  GITHUB_API_VERSION: 2022-11-28
+
+permissions:
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Download latest restic binary
+        id: download
+        run: |
+          set -eux
+
+          JSON_RESPONSE=$(curl -s \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "X-GitHub-Api-Version: $GITHUB_API_VERSION" \
+            https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest)
+
+          current_tag=$(echo $JSON_RESPONSE | jq -r '.tag_name')
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/minecraft-console-client
+          tags: |
+            ${{ steps.download.outputs.current_tag }}
+            type=sha
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

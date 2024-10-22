@@ -1,0 +1,11 @@
+services:
+  mcc:
+    build:
+      context: .
+      args:
+        - MCC_VERSION=20240906-276
+    # image: ghcr.io/xyqyear/minecraft-console-client
+    command: ["test", "-", "localhost"]
+    network_mode: host
+    stdin_open: true
+    tty: true
