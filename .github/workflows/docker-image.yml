@@ -14,19 +14,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-      - name: Download latest restic binary
-        id: download
+        uses: actions/checkout@v4
+      - name: Get latest release
+        id: version
         run: |
           set -eux
 
-          JSON_RESPONSE=$(curl -s \
+          json_response=$(curl -s \
             -H "Accept: application/vnd.github+json" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "X-GitHub-Api-Version: $GITHUB_API_VERSION" \
             https://api.github.com/repos/MCCTeam/Minecraft-Console-Client/releases/latest)
 
-          current_tag=$(echo $JSON_RESPONSE | jq -r '.tag_name')
+          echo "current_tag=$(echo $json_response | jq -r '.tag_name')" >> $GITHUB_OUTPUT
+
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -39,12 +40,13 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/minecraft-console-client
           tags: |
-            type=raw,value=${{ steps.download.outputs.current_tag }}
+            type=raw,value=${{ steps.version.outputs.current_tag }}
             type=raw,value=latest
+            type=sha,value=${{ github.sha }}
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           push: true
-          build-args: MCC_VERSION=${{ steps.download.outputs.current_tag }}
+          build-args: MCC_VERSION=${{ steps.version.outputs.current_tag }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
