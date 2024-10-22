@@ -39,8 +39,8 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/minecraft-console-client
           tags: |
-            ${{ steps.download.outputs.current_tag }}
-            type=sha
+            type=raw,value=${{ steps.download.outputs.current_tag }}
+            type=raw,value=latest
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
